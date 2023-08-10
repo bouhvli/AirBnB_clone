@@ -1,37 +1,54 @@
 #!/usr/bin/python3
+"""
+The module contains BaseModel template (class)
+"""
+import uuid
 from datetime import datetime
 import models
-import uuid
+
 
 class BaseModel:
-
+    """
+    The base class for all classes
+    """
     def __init__(self, *args, **kwargs):
-
-        dateformat = '%Y-%m-%dT%H:%M:%S.%f'
-        self.id = str(uuid.uuid4())
-        kwargs.pop('__class__', None)
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
-        if (len(kwargs)):
+        """
+        Initialization method
+        """
+        if kwargs:
             for key, value in kwargs.items():
-                if (key not in ['created_at', 'updated_at']):
-                    self.__dict__[key] = value
-                else:
-                    self.__dict__[key] = datetime.strptime(value, dateformat)
+                if key != "__class__":
+                    if key in ["created_at", "updated_at"]:
+                        self.__dict__[key] = datetime.fromisoformat(value)
+                    else:
+                        self.__dict__[key] = value
         else:
+            self.id = str(uuid.uuid4())
+            self.created_at = datetime.now()
+            self.updated_at = datetime.now()
             models.storage.new(self)
 
     def __str__(self):
-        return ("[{}] ({}) {}".format(self.__class__.__name__, self.id, self.__dict__))
+        """
+        Returns string representation of an instance
+        """
+        return "[{}] ({}) {}".format(self.__class__.__name__, self.id,
+                                     self.__dict__)
 
     def save(self):
-        self.updated_at = datetime.today()
+        """
+        Updates the public attribute "updated_at"
+        """
+        self.updated_at = datetime.now()
         models.storage.save()
 
     def to_dict(self):
-        instance_dict = self.__dict__.copy()
-        instance_dict["__class__"] = self.__class__.__name__
-        instance_dict['created_at'] = self.created_at.isoformat()
-        instance_dict['updated_at'] = self.updated_at.isoformat()
-        return instance_dict
-
+        """
+        Returns a dictionary containing all the instance
+        attributes and its class name
+        """
+        attrs = self.__dict__.copy()
+        attrs["__class__"] = self.__class__.__name__
+        attrs["created_at"] = self.created_at.isoformat()
+        attrs["updated_at"] = self.updated_at.isoformat()
+        return attrs

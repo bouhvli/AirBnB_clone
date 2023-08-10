@@ -1,42 +1,53 @@
-from json import load, dump, JSONDecodeError
-import datetime
+#!/usr/bin/python3
+"""
+The module contains FileStorage class
+"""
+import json
+from models.base_model import BaseModel
+
 
 class FileStorage:
-    __file_path='file.json'
-    __objects={}
+    """
+    The class is responsible for serializes instances to a JSON file
+    and deserializes JSON file to instances
+    """
+    __file_path = 'file.json'
+    __objects = {}
 
     def all(self):
-        return (FileStorage.__objects)
-        
+        """
+        Returns the private class attribute "objects"
+        """
+        return FileStorage.__objects
+
     def new(self, obj):
-        inst = obj.__class__.__name__
-        idO = obj.id
-        key = str(inst)+ '.' + str(idO)
+        """
+        Add a given object to the dictionary __objects
+        """
+        key = "{}.{}".format(obj.__class__.__name__, obj.id)
         FileStorage.__objects[key] = obj
 
-    def date_serialization(self, obj):
-        if isinstance(obj.created_at, datetime) and isinstance(obj.updated_at, datetime):
-            return (obj.isoformat())
-        else:
-            return obj.__dict__
-
     def save(self):
-        insstances = FileStorage.__objects
-        insstances_dict = {key: insstances[key].to_dict() for key in insstances.keys()}
-        with open(FileStorage.__file_path, "w") as file:
-            dump(insstances_dict, file)
+        """
+        Serializes __objects attribute to the JSON file
+        """
+        to_json = {key: value.to_dict() for key, value
+                   in FileStorage.__objects.items()}
 
+        with open(FileStorage.__file_path, "w") as file:
+            json.dump(to_json, file, indent=4)
 
     def reload(self):
+        """
+        Deserializes the JSON file to __objects attribute
+        """
         try:
             with open(FileStorage.__file_path, "r") as file:
-                inst = load(file)
-                from models.base_model import BaseModel
-                for key, value in inst.items():
-                    class_name, obj_id = key.split('.')
-                    inst[key]['__class__'] = class_name
-                    cls = eval(class_name)
-                    obj = cls(**value)
-                    FileStorage.__objects[key] = obj
-        except FileNotFoundError:
+                data = json.load(file)
+
+            if data:
+                for key, value in data.items():
+                    FileStorage.__objects[key] = BaseModel(**value)
+
+        except (FileNotFoundError, ValueError):
             pass
